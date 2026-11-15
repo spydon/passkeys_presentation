@@ -5,6 +5,7 @@ import 'package:flutter_deck/flutter_deck.dart';
 import 'package:flutter/material.dart';
 import 'package:passkeys_presentation/config.dart';
 import 'package:passkeys_presentation/deck/widgets/live_questions.dart';
+import 'package:passkeys_presentation/deck/widgets/passkey_counter.dart';
 import 'package:passkeys_presentation/shared/brand.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -64,6 +65,8 @@ class QaSlide extends FlutterDeckSlideWidget {
                   url.replaceFirst(RegExp('^https?://'), ''),
                   style: const TextStyle(fontSize: 28, color: Brand.green),
                 ),
+                const SizedBox(height: 48),
+                const PasskeyCounter(),
               ],
             ),
           ),

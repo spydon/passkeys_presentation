@@ -8,12 +8,144 @@
 //
 // The getters of a partial row are in an extension per table, which a `show`
 // import has to name too, such as:
-// QuestionVotesPartialRow for QuestionVotes.
+// PasskeyStatsPartialRow for PasskeyStats.
 
 // The typed table access API is still experimental.
 // ignore_for_file: experimental_member_use
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+/// A row of the `passkey_stats` table, as `select()` reads it with every
+/// column.
+extension type const PasskeyStatsRow(Map<String, dynamic> _json)
+    implements Object {
+  bool get id => _json['id'] as bool;
+  int get passkeyUsers => _json['passkey_users'] as int;
+  DateTime get updatedAt =>
+      postgresTimestamp.decode(_json['updated_at'] as String);
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Values for inserting a row into `passkey_stats`. Columns that are nullable,
+/// identity, or covered by a database default are optional; a column left out
+/// gets its database default, and `null` inserts SQL NULL. Columns the database
+/// always generates itself are left out entirely.
+extension type const PasskeyStatsInsert._(Map<String, dynamic> _json)
+    implements Object {
+  factory PasskeyStatsInsert({bool id, int passkeyUsers, DateTime updatedAt}) =
+      _PasskeyStatsInsert;
+
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  PasskeyStatsInsert Function({bool id, int passkeyUsers, DateTime updatedAt})
+  get copyWith =>
+      ({
+        Object id = const _Omitted(),
+        Object passkeyUsers = const _Omitted(),
+        Object updatedAt = const _Omitted(),
+      }) => PasskeyStatsInsert._({
+        ..._json,
+        if (id is! _Omitted) 'id': id,
+        if (passkeyUsers is! _Omitted) 'passkey_users': passkeyUsers,
+        if (updatedAt is! _Omitted)
+          'updated_at': postgresTimestamp.encode(
+            (updatedAt as DateTime).toUtc(),
+          ),
+      });
+
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
+  Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _PasskeyStatsInsert._(Map<String, dynamic> _json)
+    implements PasskeyStatsInsert {
+  _PasskeyStatsInsert({
+    Object id = const _Omitted(),
+    Object passkeyUsers = const _Omitted(),
+    Object updatedAt = const _Omitted(),
+  }) : _json = {
+         if (id is! _Omitted) 'id': id,
+         if (passkeyUsers is! _Omitted) 'passkey_users': passkeyUsers,
+         if (updatedAt is! _Omitted)
+           'updated_at': postgresTimestamp.encode(
+             (updatedAt as DateTime).toUtc(),
+           ),
+       };
+}
+
+/// Values for updating rows of `passkey_stats`. All columns are optional; a
+/// column left out keeps its value, and `null` writes SQL NULL.
+extension type const PasskeyStatsUpdate._(Map<String, dynamic> _json)
+    implements Object {
+  factory PasskeyStatsUpdate({bool id, int passkeyUsers, DateTime updatedAt}) =
+      _PasskeyStatsUpdate;
+
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  PasskeyStatsUpdate Function({bool id, int passkeyUsers, DateTime updatedAt})
+  get copyWith =>
+      ({
+        Object id = const _Omitted(),
+        Object passkeyUsers = const _Omitted(),
+        Object updatedAt = const _Omitted(),
+      }) => PasskeyStatsUpdate._({
+        ..._json,
+        if (id is! _Omitted) 'id': id,
+        if (passkeyUsers is! _Omitted) 'passkey_users': passkeyUsers,
+        if (updatedAt is! _Omitted)
+          'updated_at': postgresTimestamp.encode(
+            (updatedAt as DateTime).toUtc(),
+          ),
+      });
+
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
+  Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _PasskeyStatsUpdate._(Map<String, dynamic> _json)
+    implements PasskeyStatsUpdate {
+  _PasskeyStatsUpdate({
+    Object id = const _Omitted(),
+    Object passkeyUsers = const _Omitted(),
+    Object updatedAt = const _Omitted(),
+  }) : _json = {
+         if (id is! _Omitted) 'id': id,
+         if (passkeyUsers is! _Omitted) 'passkey_users': passkeyUsers,
+         if (updatedAt is! _Omitted)
+           'updated_at': postgresTimestamp.encode(
+             (updatedAt as DateTime).toUtc(),
+           ),
+       };
+}
+
+/// Typed access to the `passkey_stats` table.
+class PasskeyStats {
+  const PasskeyStats._();
+
+  /// Table definition for [PostgrestClient.table].
+  static const table =
+      PostgrestTable<PasskeyStatsRow, PasskeyStatsInsert, PasskeyStatsUpdate>(
+        'passkey_stats',
+        PasskeyStatsRow.new,
+        schema: 'public',
+        primaryKey: [id],
+      );
+
+  static const id = PostgrestColumn<PasskeyStatsRow, bool>('id');
+  static const passkeyUsers = PostgrestColumn<PasskeyStatsRow, int>(
+    'passkey_users',
+  );
+  static const updatedAt = PostgrestColumn<PasskeyStatsRow, DateTime>(
+    'updated_at',
+    fromJson: _dateTimeFromJson,
+  );
+}
 
 /// A row of the `question_votes` table, as `select()` reads it with every
 /// column.
@@ -398,6 +530,15 @@ extension DatabaseFunctions on PostgrestRpc {
         fromJson: (json) => json,
         schema: 'graphql_public',
       );
+}
+
+/// The values of a partial row of `passkey_stats`, as `selectOnly` returns it.
+/// A getter throws a [StateError] when the `select` list did not ask for its
+/// entry.
+extension PasskeyStatsPartialRow on PostgrestPartialRow<PasskeyStatsRow> {
+  bool get id => read(PasskeyStats.id);
+  int get passkeyUsers => read(PasskeyStats.passkeyUsers);
+  DateTime get updatedAt => read(PasskeyStats.updatedAt);
 }
 
 /// The values of a partial row of `question_votes`, as `selectOnly` returns it.
