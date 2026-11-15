@@ -264,6 +264,7 @@ class GotchasSlide extends FlutterDeckSlideWidget {
               '- Beta: the API is marked @experimental and can still change.\n'
               '- A passkey is added to an existing user, so sign up still happens another way (OTP, OAuth...). This demo creates a guest user with a generated email.\n'
               '- MFA: aal2 is needed to manage passkeys when factors are verified.\n'
+              '  aal1 means one factor (here: the passkey or password), aal2 means a second factor like TOTP was verified in this session, check it with auth.mfa.getAuthenticatorAssuranceLevel().\n'
               '- Changing the relying party ID invalidates every passkey.\n'
               '- Android Restore Credentials: createRestoreKey() and signInWithRestoreKey() give zero tap sign in on a new phone.',
         ),
@@ -272,14 +273,21 @@ class GotchasSlide extends FlutterDeckSlideWidget {
   @override
   Widget build(BuildContext context) {
     return FlutterDeckSlide.template(
-      contentBuilder: (context) => FlutterDeckBulletList(
-        useSteps: true,
-        items: const [
-          'Beta: the API is @experimental and may still change',
-          'Passkeys are added to a signed in, non-anonymous user',
-          'With verified MFA factors, managing passkeys needs aal2',
-          'The relying party ID is forever, pick your domain carefully',
-          'Android bonus: createRestoreKey() for zero tap sign in on a new phone',
+      contentBuilder: (context) => const SteppedBulletList(
+        bullets: [
+          Bullet('Beta: the API is @experimental and may still change'),
+          Bullet('Passkeys are added to a signed in, non-anonymous user'),
+          Bullet(
+            'With verified MFA factors, managing passkeys needs aal2',
+            subBullets: [
+              'aal2 = Authenticator Assurance Level 2: the session has also '
+                  'passed a second factor, like a TOTP code',
+            ],
+          ),
+          Bullet('The relying party ID is forever, pick your domain carefully'),
+          Bullet(
+            'Android bonus: createRestoreKey() for zero tap sign in on a new phone',
+          ),
         ],
       ),
     );
