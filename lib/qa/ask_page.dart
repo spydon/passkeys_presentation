@@ -3,7 +3,9 @@
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:passkeys_presentation/qa/passkey_auth.dart';
+import 'package:passkeys_presentation/shared/animated_reorder_column.dart';
 import 'package:passkeys_presentation/shared/brand.dart';
+import 'package:passkeys_presentation/shared/pop_in.dart';
 import 'package:passkeys_presentation/shared/question_order.dart';
 import 'package:passkeys_presentation/supabase_schema.g.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -196,20 +198,24 @@ class _AskPageState extends State<AskPage> {
                             style: TextStyle(color: Brand.mutedText),
                           );
                         }
-                        return Column(
+                        return AnimatedReorderColumn(
+                          // The cards bring their own margin.
+                          spacing: 0,
                           children: [
                             for (final question in questions)
-                              _QuestionTile(
+                              PopIn(
                                 key: ValueKey(question.id),
-                                question: question,
-                                isOwn: question.userId == widget.user.id,
-                                voted: votedIds.contains(question.id),
-                                busy: _pendingVotes.contains(question.id),
-                                onToggleVote: () => _toggleVote(
-                                  question,
+                                child: _QuestionTile(
+                                  question: question,
+                                  isOwn: question.userId == widget.user.id,
                                   voted: votedIds.contains(question.id),
+                                  busy: _pendingVotes.contains(question.id),
+                                  onToggleVote: () => _toggleVote(
+                                    question,
+                                    voted: votedIds.contains(question.id),
+                                  ),
+                                  onDelete: () => _delete(question),
                                 ),
-                                onDelete: () => _delete(question),
                               ),
                           ],
                         );
@@ -234,7 +240,6 @@ class _QuestionTile extends StatelessWidget {
     required this.busy,
     required this.onToggleVote,
     required this.onDelete,
-    super.key,
   });
 
   final QuestionsRow question;
@@ -270,9 +275,18 @@ class _QuestionTile extends StatelessWidget {
                       color: isOwn ? Brand.surfaceHigh : color,
                     ),
                   ),
-                  Text(
-                    '${question.voteCount}',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: color),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, animation) =>
+                        ScaleTransition(scale: animation, child: child),
+                    child: Text(
+                      '${question.voteCount}',
+                      key: ValueKey(question.voteCount),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
                   ),
                 ],
               ),
