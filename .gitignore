@@ -1,6 +1,8 @@
 # Miscellaneous
 *.class
 *.lock
+# The app pins a dev release of supabase_flutter, so CI uses the same versions.
+!pubspec.lock
 *.log
 *.pyc
 *.swp
@@ -117,3 +119,6 @@ app.*.symbols
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
+# IDE files
+.idea/
+*.iml

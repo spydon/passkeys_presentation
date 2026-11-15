@@ -1,0 +1,14 @@
+{
+  "schemas": [{ "id": 2200, "name": "public" }],
+  "tables": [{ "id": 1, "schema": "public", "name": "questions" }],
+  "columns": [
+    { "table_id": 1, "name": "author_name", "format": "text", "type_schema": "pg_catalog", "data_type": "text", "is_nullable": false, "check": null, "default_value": null, "is_identity": false, "is_generated": false, "identity_generation": null, "is_updatable": true, "comment": null, "enums": [] },
+    { "table_id": 1, "name": "content", "format": "text", "type_schema": "pg_catalog", "data_type": "text", "is_nullable": false, "check": null, "default_value": null, "is_identity": false, "is_generated": false, "identity_generation": null, "is_updatable": true, "comment": null, "enums": [] },
+    { "table_id": 1, "name": "created_at", "format": "timestamptz", "type_schema": "pg_catalog", "data_type": "timestamp with time zone", "is_nullable": false, "check": null, "default_value": "now()", "is_identity": false, "is_generated": false, "identity_generation": null, "is_updatable": true, "comment": null, "enums": [] },
+    { "table_id": 1, "name": "id", "format": "int8", "type_schema": "pg_catalog", "data_type": "bigint", "is_nullable": false, "check": null, "default_value": null, "is_identity": true, "is_generated": false, "identity_generation": "BY DEFAULT", "is_updatable": true, "comment": null, "enums": [] },
+    { "table_id": 1, "name": "user_id", "format": "uuid", "type_schema": "pg_catalog", "data_type": "uuid", "is_nullable": false, "check": null, "default_value": "auth.uid()", "is_identity": false, "is_generated": false, "identity_generation": null, "is_updatable": true, "comment": null, "enums": [] }
+  ],
+  "primaryKeys": [{ "schema": "public", "table_name": "questions", "name": "id", "table_id": 1 }],
+  "relationships": [],
+  "views": [], "materializedViews": [], "foreignTables": [], "functions": [], "types": []
+}
