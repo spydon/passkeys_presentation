@@ -61,6 +61,12 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Outfit by Rodrigo Fuenzalida, SIL Open Font License (assets/fonts/Outfit-OFL.txt).
+  fonts:
+    - family: Outfit
+      fonts:
+        - asset: assets/fonts/Outfit-Variable.ttf
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

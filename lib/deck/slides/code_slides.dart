@@ -73,10 +73,11 @@ class RegisterSlide extends FlutterDeckSlideWidget {
         builder: (context, step) => Center(
           child: SlideCode(
             fileName: 'register.dart',
+            // Zero-indexed line numbers.
             highlightedLines: switch (step) {
-              1 => const [1, 2, 3],
-              2 => const [5, 6, 7, 8, 9],
-              _ => const [11],
+              1 => const [0, 2],
+              2 => const [4, 5, 6, 7, 8],
+              _ => const [10],
             },
             code: '''
 import 'package:passkeys/authenticator.dart';
@@ -192,10 +193,11 @@ class UnderTheHoodSlide extends FlutterDeckSlideWidget {
           child: SlideCode(
             fileName: 'supabase_passkey.dart (simplified)',
             fontSize: 26,
+            // Zero-indexed line numbers.
             highlightedLines: switch (step) {
-              1 => const [1],
-              2 => const [2, 3, 4],
-              _ => const [5, 6, 7, 8],
+              1 => const [0],
+              2 => const [1, 2, 3],
+              _ => const [4, 5, 6, 7],
             },
             code: '''
 final registration = await supabase.auth.passkey.startRegistration();

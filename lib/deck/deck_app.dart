@@ -7,41 +7,61 @@ import 'package:passkeys_presentation/deck/slides/code_slides.dart';
 import 'package:passkeys_presentation/deck/slides/intro_slides.dart';
 import 'package:passkeys_presentation/deck/slides/qa_slide.dart';
 import 'package:passkeys_presentation/deck/slides/setup_slides.dart';
+import 'package:passkeys_presentation/deck/widgets/deck_templates.dart';
 import 'package:passkeys_presentation/shared/brand.dart';
 
 /// The slides. The last one is the live Q&A.
 class DeckApp extends StatelessWidget {
   const DeckApp({super.key});
 
+  /// The deck theme, shared with the slide tests.
+  static FlutterDeckThemeData get theme {
+    final baseTheme = FlutterDeckThemeData.fromTheme(Brand.theme);
+    return baseTheme.copyWith(
+      // The bullet lists, mostly on the left of split slides.
+      bulletListTheme: baseTheme.bulletListTheme.copyWith(
+        textStyle: const TextStyle(
+          fontFamily: 'Outfit',
+          fontSize: 44,
+          height: 1.3,
+          fontVariations: [FontVariation.weight(400)],
+        ),
+      ),
+    );
+  }
+
+  /// The deck configuration, shared with the slide tests.
+  static FlutterDeckConfiguration get configuration => FlutterDeckConfiguration(
+    background: const FlutterDeckBackgroundConfiguration(
+      light: FlutterDeckBackground.solid(Brand.background),
+      dark: FlutterDeckBackground.gradient(
+        LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1C1C1C), Color(0xFF14261D)],
+        ),
+      ),
+    ),
+    footer: const FlutterDeckFooterConfiguration(showSlideNumbers: true),
+    progressIndicator: const FlutterDeckProgressIndicator.solid(
+      color: Brand.green,
+      backgroundColor: Brand.surface,
+    ),
+    slideSize: FlutterDeckSlideSize.fromAspectRatio(
+      aspectRatio: const FlutterDeckAspectRatio.ratio16x9(),
+      resolution: const FlutterDeckResolution.fhd(),
+    ),
+    templateOverrides: deckTemplateOverrides,
+    transition: const FlutterDeckTransition.fade(),
+  );
+
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterDeckThemeData.fromTheme(Brand.theme);
     return FlutterDeckApp(
       themeMode: ThemeMode.dark,
       lightTheme: theme,
       darkTheme: theme,
-      configuration: FlutterDeckConfiguration(
-        background: const FlutterDeckBackgroundConfiguration(
-          light: FlutterDeckBackground.solid(Brand.background),
-          dark: FlutterDeckBackground.gradient(
-            LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF1C1C1C), Color(0xFF14261D)],
-            ),
-          ),
-        ),
-        footer: const FlutterDeckFooterConfiguration(showSlideNumbers: true),
-        progressIndicator: const FlutterDeckProgressIndicator.solid(
-          color: Brand.green,
-          backgroundColor: Brand.surface,
-        ),
-        slideSize: FlutterDeckSlideSize.fromAspectRatio(
-          aspectRatio: const FlutterDeckAspectRatio.ratio16x9(),
-          resolution: const FlutterDeckResolution.fhd(),
-        ),
-        transition: const FlutterDeckTransition.fade(),
-      ),
+      configuration: configuration,
       slides: const [
         TitleSlide(),
         ProblemSlide(),
