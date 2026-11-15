@@ -53,6 +53,43 @@ void main() {
     expect(yOf(tester, 'tall'), 60);
   });
 
+  testWidgets('removed children fade out while the rest close the gap', (
+    tester,
+  ) async {
+    await tester.pumpWidget(column(['tall', 'short']));
+    await tester.pumpWidget(column(['short']));
+    // Still there, where it was, but fading.
+    expect(yOf(tester, 'tall'), 0);
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(yOf(tester, 'tall'), 0);
+    expect(yOf(tester, 'short'), closeTo(55, 1));
+    final fade = tester.widget<FadeTransition>(
+      find
+          .ancestor(
+            of: find.byKey(const ValueKey('tall')),
+            matching: find.byType(FadeTransition),
+          )
+          .first,
+    );
+    expect(fade.opacity.value, lessThan(1));
+    expect(fade.opacity.value, greaterThan(0));
+
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('tall')), findsNothing);
+    expect(yOf(tester, 'short'), 0);
+  });
+
+  testWidgets('a child that comes back stops fading out', (tester) async {
+    await tester.pumpWidget(column(['tall', 'short']));
+    await tester.pumpWidget(column(['short']));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpWidget(column(['tall', 'short']));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('tall')), findsOneWidget);
+    expect(yOf(tester, 'tall'), 0);
+    expect(yOf(tester, 'short'), 110);
+  });
+
   testWidgets('is as tall as its children so it can scroll', (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
