@@ -1,0 +1,55 @@
+// ignore: deprecated_member_use
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:passkeys_presentation/shared/animated_reorder_column.dart';
+
+void main() {
+  Widget column(List<String> order) => Directionality(
+    textDirection: TextDirection.ltr,
+    child: SizedBox(
+      height: 400,
+      child: AnimatedReorderColumn(
+        spacing: 10,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.linear,
+        children: [
+          for (final id in order)
+            SizedBox(key: ValueKey(id), height: id == 'tall' ? 100 : 50),
+        ],
+      ),
+    ),
+  );
+
+  double yOf(WidgetTester tester, String id) =>
+      tester.getTopLeft(find.byKey(ValueKey(id))).dy;
+
+  testWidgets('slides children to their new place when the order changes', (
+    tester,
+  ) async {
+    await tester.pumpWidget(column(['tall', 'short']));
+    expect(yOf(tester, 'tall'), 0);
+    expect(yOf(tester, 'short'), 110);
+
+    await tester.pumpWidget(column(['short', 'tall']));
+    // The first frame after the change still shows the old positions.
+    expect(yOf(tester, 'short'), 110);
+    expect(yOf(tester, 'tall'), 0);
+
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(yOf(tester, 'short'), closeTo(55, 1));
+    expect(yOf(tester, 'tall'), closeTo(30, 1));
+
+    await tester.pumpAndSettle();
+    expect(yOf(tester, 'short'), 0);
+    expect(yOf(tester, 'tall'), 60);
+  });
+
+  testWidgets('new children appear in place', (tester) async {
+    await tester.pumpWidget(column(['tall']));
+    await tester.pumpWidget(column(['short', 'tall']));
+    expect(yOf(tester, 'short'), 0);
+    await tester.pumpAndSettle();
+    expect(yOf(tester, 'short'), 0);
+    expect(yOf(tester, 'tall'), 60);
+  });
+}

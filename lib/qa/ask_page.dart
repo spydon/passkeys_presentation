@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:passkeys_presentation/qa/passkey_auth.dart';
 import 'package:passkeys_presentation/shared/brand.dart';
+import 'package:passkeys_presentation/shared/question_order.dart';
 import 'package:passkeys_presentation/supabase_schema.g.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -21,12 +22,18 @@ class AskPage extends StatefulWidget {
 class _AskPageState extends State<AskPage> {
   final _supabase = Supabase.instance.client;
   final _controller = TextEditingController();
-  late final Stream<List<QuestionsRow>> _myQuestions = _supabase
+  late final Stream<List<QuestionsRow>> _questions = _supabase
       .table(Questions.table)
       .stream(primaryKey: [Questions.id])
-      .filter(Questions.userId.eq(widget.user.id))
       .order(Questions.createdAt.desc());
+  late final Stream<List<QuestionVotesRow>> _myVotes = _supabase
+      .table(QuestionVotes.table)
+      .stream(primaryKey: [QuestionVotes.questionId, QuestionVotes.userId])
+      .filter(QuestionVotes.userId.eq(widget.user.id));
   bool _sending = false;
+
+  /// Questions with a vote change on the way, to avoid double taps.
+  final _pendingVotes = <int>{};
 
   String get _name => displayNameOf(widget.user);
 
@@ -61,6 +68,31 @@ class _AskPageState extends State<AskPage> {
           .where(Questions.id.eq(question.id));
     } on SupabaseException catch (error) {
       _showMessage('Could not delete the question: ${error.message}');
+    }
+  }
+
+  Future<void> _toggleVote(QuestionsRow question, {required bool voted}) async {
+    if (!_pendingVotes.add(question.id)) return;
+    setState(() {});
+    try {
+      if (voted) {
+        await _supabase
+            .table(QuestionVotes.table)
+            .delete()
+            .where(
+              QuestionVotes.questionId.eq(question.id) &
+                  QuestionVotes.userId.eq(widget.user.id),
+            );
+      } else {
+        await _supabase
+            .table(QuestionVotes.table)
+            .insert(QuestionVotesInsert(questionId: question.id));
+      }
+    } on SupabaseException catch (error) {
+      _showMessage('Could not update your vote: ${error.message}');
+    } finally {
+      _pendingVotes.remove(question.id);
+      if (mounted) setState(() {});
     }
   }
 
@@ -133,45 +165,142 @@ class _AskPageState extends State<AskPage> {
                   label: const Text('Ask'),
                 ),
                 const SizedBox(height: 32),
-                Text('Your questions', style: textTheme.titleMedium),
+                Text('Questions', style: textTheme.titleMedium),
+                const SizedBox(height: 4),
+                const Text(
+                  'Upvote the ones you want answered.',
+                  style: TextStyle(color: Brand.mutedText),
+                ),
                 const SizedBox(height: 8),
                 StreamBuilder(
-                  stream: _myQuestions,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return Text(
-                        'Could not load your questions: ${snapshot.error}',
-                        style: const TextStyle(color: Brand.mutedText),
-                      );
-                    }
-                    final questions = snapshot.data ?? const [];
-                    if (questions.isEmpty) {
-                      return const Text(
-                        'Nothing yet.',
-                        style: TextStyle(color: Brand.mutedText),
-                      );
-                    }
-                    return Column(
-                      children: [
-                        for (final question in questions)
-                          Card(
-                            color: Brand.surface,
-                            child: ListTile(
-                              title: Text(question.content),
-                              trailing: IconButton(
-                                tooltip: 'Delete',
-                                icon: const Icon(Icons.delete_outline),
-                                onPressed: () => _delete(question),
+                  stream: _myVotes,
+                  builder: (context, votesSnapshot) {
+                    final votedIds = {
+                      for (final vote
+                          in votesSnapshot.data ?? const <QuestionVotesRow>[])
+                        vote.questionId,
+                    };
+                    return StreamBuilder(
+                      stream: _questions,
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return Text(
+                            'Could not load the questions: ${snapshot.error}',
+                            style: const TextStyle(color: Brand.mutedText),
+                          );
+                        }
+                        final questions = byVotes(snapshot.data ?? const []);
+                        if (questions.isEmpty) {
+                          return const Text(
+                            'Nothing yet, be the first!',
+                            style: TextStyle(color: Brand.mutedText),
+                          );
+                        }
+                        return Column(
+                          children: [
+                            for (final question in questions)
+                              _QuestionTile(
+                                key: ValueKey(question.id),
+                                question: question,
+                                isOwn: question.userId == widget.user.id,
+                                voted: votedIds.contains(question.id),
+                                busy: _pendingVotes.contains(question.id),
+                                onToggleVote: () => _toggleVote(
+                                  question,
+                                  voted: votedIds.contains(question.id),
+                                ),
+                                onDelete: () => _delete(question),
                               ),
-                            ),
-                          ),
-                      ],
+                          ],
+                        );
+                      },
                     );
                   },
                 ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuestionTile extends StatelessWidget {
+  const _QuestionTile({
+    required this.question,
+    required this.isOwn,
+    required this.voted,
+    required this.busy,
+    required this.onToggleVote,
+    required this.onDelete,
+    super.key,
+  });
+
+  final QuestionsRow question;
+  final bool isOwn;
+  final bool voted;
+  final bool busy;
+  final VoidCallback onToggleVote;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = voted ? Brand.green : Brand.mutedText;
+    return Card(
+      color: Brand.surface,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 56,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: isOwn
+                        ? 'You cannot upvote your own question'
+                        : voted
+                        ? 'Remove upvote'
+                        : 'Upvote',
+                    onPressed: isOwn || busy ? null : onToggleVote,
+                    icon: Icon(
+                      Icons.arrow_upward_rounded,
+                      color: isOwn ? Brand.surfaceHigh : color,
+                    ),
+                  ),
+                  Text(
+                    '${question.voteCount}',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: color),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(question.content),
+                  const SizedBox(height: 4),
+                  Text(
+                    isOwn ? 'You' : question.authorName,
+                    style: const TextStyle(
+                      color: Brand.mutedText,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isOwn)
+              IconButton(
+                tooltip: 'Delete',
+                icon: const Icon(Icons.delete_outline),
+                onPressed: onDelete,
+              ),
+          ],
         ),
       ),
     );

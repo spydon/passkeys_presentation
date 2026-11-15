@@ -8,12 +8,172 @@
 //
 // The getters of a partial row are in an extension per table, which a `show`
 // import has to name too, such as:
-// QuestionsPartialRow for Questions.
+// QuestionVotesPartialRow for QuestionVotes.
 
 // The typed table access API is still experimental.
 // ignore_for_file: experimental_member_use
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+/// A row of the `question_votes` table, as `select()` reads it with every
+/// column.
+extension type const QuestionVotesRow(Map<String, dynamic> _json)
+    implements Object {
+  DateTime get createdAt =>
+      postgresTimestamp.decode(_json['created_at'] as String);
+  int get questionId => _json['question_id'] as int;
+  String get userId => _json['user_id'] as String;
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Values for inserting a row into `question_votes`. Columns that are nullable,
+/// identity, or covered by a database default are optional; a column left out
+/// gets its database default, and `null` inserts SQL NULL. Columns the database
+/// always generates itself are left out entirely.
+extension type const QuestionVotesInsert._(Map<String, dynamic> _json)
+    implements Object {
+  factory QuestionVotesInsert({
+    DateTime createdAt,
+    required int questionId,
+    String userId,
+  }) = _QuestionVotesInsert;
+
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  QuestionVotesInsert Function({
+    DateTime createdAt,
+    int questionId,
+    String userId,
+  })
+  get copyWith =>
+      ({
+        Object createdAt = const _Omitted(),
+        Object questionId = const _Omitted(),
+        Object userId = const _Omitted(),
+      }) => QuestionVotesInsert._({
+        ..._json,
+        if (createdAt is! _Omitted)
+          'created_at': postgresTimestamp.encode(
+            (createdAt as DateTime).toUtc(),
+          ),
+        if (questionId is! _Omitted) 'question_id': questionId,
+        if (userId is! _Omitted) 'user_id': userId,
+      });
+
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
+  Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _QuestionVotesInsert._(Map<String, dynamic> _json)
+    implements QuestionVotesInsert {
+  _QuestionVotesInsert({
+    Object createdAt = const _Omitted(),
+    required int questionId,
+    Object userId = const _Omitted(),
+  }) : _json = {
+         if (createdAt is! _Omitted)
+           'created_at': postgresTimestamp.encode(
+             (createdAt as DateTime).toUtc(),
+           ),
+         'question_id': questionId,
+         if (userId is! _Omitted) 'user_id': userId,
+       };
+}
+
+/// Values for updating rows of `question_votes`. All columns are optional; a
+/// column left out keeps its value, and `null` writes SQL NULL.
+extension type const QuestionVotesUpdate._(Map<String, dynamic> _json)
+    implements Object {
+  factory QuestionVotesUpdate({
+    DateTime createdAt,
+    int questionId,
+    String userId,
+  }) = _QuestionVotesUpdate;
+
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  QuestionVotesUpdate Function({
+    DateTime createdAt,
+    int questionId,
+    String userId,
+  })
+  get copyWith =>
+      ({
+        Object createdAt = const _Omitted(),
+        Object questionId = const _Omitted(),
+        Object userId = const _Omitted(),
+      }) => QuestionVotesUpdate._({
+        ..._json,
+        if (createdAt is! _Omitted)
+          'created_at': postgresTimestamp.encode(
+            (createdAt as DateTime).toUtc(),
+          ),
+        if (questionId is! _Omitted) 'question_id': questionId,
+        if (userId is! _Omitted) 'user_id': userId,
+      });
+
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
+  Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _QuestionVotesUpdate._(Map<String, dynamic> _json)
+    implements QuestionVotesUpdate {
+  _QuestionVotesUpdate({
+    Object createdAt = const _Omitted(),
+    Object questionId = const _Omitted(),
+    Object userId = const _Omitted(),
+  }) : _json = {
+         if (createdAt is! _Omitted)
+           'created_at': postgresTimestamp.encode(
+             (createdAt as DateTime).toUtc(),
+           ),
+         if (questionId is! _Omitted) 'question_id': questionId,
+         if (userId is! _Omitted) 'user_id': userId,
+       };
+}
+
+/// Typed access to the `question_votes` table.
+class QuestionVotes {
+  const QuestionVotes._();
+
+  /// Table definition for [PostgrestClient.table].
+  static const table =
+      PostgrestTable<
+        QuestionVotesRow,
+        QuestionVotesInsert,
+        QuestionVotesUpdate
+      >(
+        'question_votes',
+        QuestionVotesRow.new,
+        schema: 'public',
+        primaryKey: [questionId, userId],
+        relations: [questions],
+      );
+
+  static const createdAt = PostgrestColumn<QuestionVotesRow, DateTime>(
+    'created_at',
+    fromJson: _dateTimeFromJson,
+  );
+  static const questionId = PostgrestColumn<QuestionVotesRow, int>(
+    'question_id',
+  );
+  static const userId = PostgrestColumn<QuestionVotesRow, String>('user_id');
+
+  /// The `questions` row referenced by `question_id`.
+  static const questions =
+      PostgrestToOneRelation<QuestionVotesRow, QuestionsRow>(
+        'questions',
+        columns: [questionId],
+        referencedTable: 'questions',
+        referencedColumns: [Questions.id],
+      );
+}
 
 /// A row of the `questions` table, as `select()` reads it with every column.
 extension type const QuestionsRow(Map<String, dynamic> _json)
@@ -24,6 +184,7 @@ extension type const QuestionsRow(Map<String, dynamic> _json)
       postgresTimestamp.decode(_json['created_at'] as String);
   int get id => _json['id'] as int;
   String get userId => _json['user_id'] as String;
+  int get voteCount => _json['vote_count'] as int;
 
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
@@ -41,6 +202,7 @@ extension type const QuestionsInsert._(Map<String, dynamic> _json)
     DateTime createdAt,
     int id,
     String userId,
+    int voteCount,
   }) = _QuestionsInsert;
 
   /// Returns a copy with the given columns replaced. A column left out keeps
@@ -51,6 +213,7 @@ extension type const QuestionsInsert._(Map<String, dynamic> _json)
     DateTime createdAt,
     int id,
     String userId,
+    int voteCount,
   })
   get copyWith =>
       ({
@@ -59,6 +222,7 @@ extension type const QuestionsInsert._(Map<String, dynamic> _json)
         Object createdAt = const _Omitted(),
         Object id = const _Omitted(),
         Object userId = const _Omitted(),
+        Object voteCount = const _Omitted(),
       }) => QuestionsInsert._({
         ..._json,
         if (authorName is! _Omitted) 'author_name': authorName,
@@ -69,6 +233,7 @@ extension type const QuestionsInsert._(Map<String, dynamic> _json)
           ),
         if (id is! _Omitted) 'id': id,
         if (userId is! _Omitted) 'user_id': userId,
+        if (voteCount is! _Omitted) 'vote_count': voteCount,
       });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
@@ -85,6 +250,7 @@ extension type const _QuestionsInsert._(Map<String, dynamic> _json)
     Object createdAt = const _Omitted(),
     Object id = const _Omitted(),
     Object userId = const _Omitted(),
+    Object voteCount = const _Omitted(),
   }) : _json = {
          'author_name': authorName,
          'content': content,
@@ -94,6 +260,7 @@ extension type const _QuestionsInsert._(Map<String, dynamic> _json)
            ),
          if (id is! _Omitted) 'id': id,
          if (userId is! _Omitted) 'user_id': userId,
+         if (voteCount is! _Omitted) 'vote_count': voteCount,
        };
 }
 
@@ -107,6 +274,7 @@ extension type const QuestionsUpdate._(Map<String, dynamic> _json)
     DateTime createdAt,
     int id,
     String userId,
+    int voteCount,
   }) = _QuestionsUpdate;
 
   /// Returns a copy with the given columns replaced. A column left out keeps
@@ -117,6 +285,7 @@ extension type const QuestionsUpdate._(Map<String, dynamic> _json)
     DateTime createdAt,
     int id,
     String userId,
+    int voteCount,
   })
   get copyWith =>
       ({
@@ -125,6 +294,7 @@ extension type const QuestionsUpdate._(Map<String, dynamic> _json)
         Object createdAt = const _Omitted(),
         Object id = const _Omitted(),
         Object userId = const _Omitted(),
+        Object voteCount = const _Omitted(),
       }) => QuestionsUpdate._({
         ..._json,
         if (authorName is! _Omitted) 'author_name': authorName,
@@ -135,6 +305,7 @@ extension type const QuestionsUpdate._(Map<String, dynamic> _json)
           ),
         if (id is! _Omitted) 'id': id,
         if (userId is! _Omitted) 'user_id': userId,
+        if (voteCount is! _Omitted) 'vote_count': voteCount,
       });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
@@ -151,6 +322,7 @@ extension type const _QuestionsUpdate._(Map<String, dynamic> _json)
     Object createdAt = const _Omitted(),
     Object id = const _Omitted(),
     Object userId = const _Omitted(),
+    Object voteCount = const _Omitted(),
   }) : _json = {
          if (authorName is! _Omitted) 'author_name': authorName,
          if (content is! _Omitted) 'content': content,
@@ -160,6 +332,7 @@ extension type const _QuestionsUpdate._(Map<String, dynamic> _json)
            ),
          if (id is! _Omitted) 'id': id,
          if (userId is! _Omitted) 'user_id': userId,
+         if (voteCount is! _Omitted) 'vote_count': voteCount,
        };
 }
 
@@ -174,6 +347,7 @@ class Questions {
         QuestionsRow.new,
         schema: 'public',
         primaryKey: [id],
+        relations: [questionVotes],
       );
 
   static const authorName = PostgrestColumn<QuestionsRow, String>(
@@ -186,6 +360,16 @@ class Questions {
   );
   static const id = PostgrestColumn<QuestionsRow, int>('id');
   static const userId = PostgrestColumn<QuestionsRow, String>('user_id');
+  static const voteCount = PostgrestColumn<QuestionsRow, int>('vote_count');
+
+  /// The `question_votes` rows referencing this row through `question_id`.
+  static const questionVotes =
+      PostgrestToManyRelation<QuestionsRow, QuestionVotesRow>(
+        'question_votes',
+        columns: [id],
+        referencedTable: 'question_votes',
+        referencedColumns: [QuestionVotes.questionId],
+      );
 }
 
 /// Typed calls of the database functions, `client.rpc.functionName(…)`.
@@ -216,6 +400,19 @@ extension DatabaseFunctions on PostgrestRpc {
       );
 }
 
+/// The values of a partial row of `question_votes`, as `selectOnly` returns it.
+/// A getter throws a [StateError] when the `select` list did not ask for its
+/// entry.
+extension QuestionVotesPartialRow on PostgrestPartialRow<QuestionVotesRow> {
+  DateTime get createdAt => read(QuestionVotes.createdAt);
+  int get questionId => read(QuestionVotes.questionId);
+  String get userId => read(QuestionVotes.userId);
+
+  /// The `questions` row referenced by `question_id`.
+  PostgrestPartialRow<QuestionsRow>? get questions =>
+      read(QuestionVotes.questions);
+}
+
 /// The values of a partial row of `questions`, as `selectOnly` returns it. A
 /// getter throws a [StateError] when the `select` list did not ask for its
 /// entry.
@@ -225,6 +422,11 @@ extension QuestionsPartialRow on PostgrestPartialRow<QuestionsRow> {
   DateTime get createdAt => read(Questions.createdAt);
   int get id => read(Questions.id);
   String get userId => read(Questions.userId);
+  int get voteCount => read(Questions.voteCount);
+
+  /// The `question_votes` rows referencing this row through `question_id`.
+  List<PostgrestPartialRow<QuestionVotesRow>> get questionVotes =>
+      read(Questions.questionVotes);
 }
 
 DateTime _dateTimeFromJson(Object json) =>
