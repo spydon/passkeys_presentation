@@ -439,6 +439,23 @@ additional_redirect_urls = ["https://spydon.github.io/passkeys_presentation/"]
 [remotes.production.auth.email]
 enabled = true
 enable_confirmations = false
+# Keep the project's existing values for everything else.
+max_frequency = "1m0s"
+otp_length = 8
+
+[remotes.production.auth.sms]
+enable_confirmations = true
+
+[remotes.production.auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[remotes.production.db.pooler]
+default_pool_size = 15
+max_client_conn = 200
+
+[remotes.production.storage.vector]
+enabled = false
 
 [remotes.production.auth.passkey]
 enabled = true

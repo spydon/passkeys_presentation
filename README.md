@@ -63,9 +63,8 @@ Other build time settings are in `lib/config.dart`.
 
 ## Regenerating the typed schema
 
-`lib/supabase_schema.g.dart` was generated with `supabase_typegen` from
-`tool/schema_metadata.json`, which describes the migration's table. With
-Supabase CLI 3.0 or newer, generate it from the database instead:
+Regenerate `lib/supabase_schema.g.dart` after every schema change, with
+Supabase CLI 3.0 or newer:
 
 ```sh
 supabase gen types --lang dart --remote > lib/supabase_schema.g.dart
