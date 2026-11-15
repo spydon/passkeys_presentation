@@ -2,6 +2,7 @@
 // use the same library rather than package:material_ui.
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 /// A column that animates its children to their new positions when their
 /// order changes.
@@ -9,8 +10,8 @@ import 'package:flutter/material.dart';
 /// Every child needs a unique key. The children can have any height: they are
 /// measured during layout and slid from where they were drawn last to where
 /// they belong now, so an item moving up past others glides into place
-/// instead of jumping. Children that do not fit are clipped, so give the column
-/// bounded height.
+/// instead of jumping. The column is as tall as its children, so wrap it in a
+/// scroll view when they might not fit.
 class AnimatedReorderColumn extends StatefulWidget {
   const AnimatedReorderColumn({
     required this.children,
@@ -35,6 +36,10 @@ class _AnimatedReorderColumnState extends State<AnimatedReorderColumn>
     vsync: this,
     duration: widget.duration,
     value: 1,
+  );
+  late final _progress = CurvedAnimation(
+    parent: _controller,
+    curve: widget.curve,
   );
 
   /// Where each child was drawn in the last layout.
@@ -65,6 +70,7 @@ class _AnimatedReorderColumnState extends State<AnimatedReorderColumn>
 
   @override
   void dispose() {
+    _progress.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -75,32 +81,26 @@ class _AnimatedReorderColumnState extends State<AnimatedReorderColumn>
       widget.children.every((child) => child.key != null),
       'Every child of AnimatedReorderColumn needs a key.',
     );
-    return ClipRect(
-      child: CustomMultiChildLayout(
-        delegate: _ReorderLayoutDelegate(
-          keys: _keys,
-          spacing: widget.spacing,
-          progress: CurvedAnimation(parent: _controller, curve: widget.curve),
-          startY: _startY,
-          drawnY: _drawnY,
-        ),
-        children: [
-          for (final child in widget.children)
-            LayoutId(id: child.key!, child: child),
-        ],
-      ),
+    return _ReorderLayout(
+      keys: _keys,
+      spacing: widget.spacing,
+      progress: _progress,
+      startY: _startY,
+      drawnY: _drawnY,
+      children: widget.children,
     );
   }
 }
 
-class _ReorderLayoutDelegate extends MultiChildLayoutDelegate {
-  _ReorderLayoutDelegate({
+class _ReorderLayout extends MultiChildRenderObjectWidget {
+  const _ReorderLayout({
     required this.keys,
     required this.spacing,
     required this.progress,
     required this.startY,
     required this.drawnY,
-  }) : super(relayout: progress);
+    required super.children,
+  });
 
   final List<Key> keys;
   final double spacing;
@@ -109,22 +109,120 @@ class _ReorderLayoutDelegate extends MultiChildLayoutDelegate {
   final Map<Key, double> drawnY;
 
   @override
-  void performLayout(Size size) {
-    final constraints = BoxConstraints(maxWidth: size.width);
-    var targetY = 0.0;
-    drawnY.removeWhere((key, _) => !keys.contains(key));
-    for (final key in keys) {
-      final childSize = layoutChild(key, constraints);
-      // New children start where they belong and pop in on their own.
-      final fromY = startY[key] ?? targetY;
-      final y = fromY + (targetY - fromY) * progress.value;
-      positionChild(key, Offset(0, y));
-      drawnY[key] = y;
-      targetY += childSize.height + spacing;
+  _RenderReorderColumn createRenderObject(BuildContext context) =>
+      _RenderReorderColumn(
+        keys: keys,
+        spacing: spacing,
+        progress: progress,
+        startY: startY,
+        drawnY: drawnY,
+      );
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderReorderColumn renderObject,
+  ) {
+    renderObject
+      ..keys = keys
+      ..spacing = spacing
+      ..progress = progress
+      ..startY = startY
+      ..drawnY = drawnY;
+  }
+}
+
+class _ReorderParentData extends ContainerBoxParentData<RenderBox> {}
+
+/// Lays the children out top to bottom, each drawn between where it was when
+/// the order changed and where it belongs, by [progress]. Its own height is
+/// that of the final layout.
+class _RenderReorderColumn extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, _ReorderParentData>,
+        RenderBoxContainerDefaultsMixin<RenderBox, _ReorderParentData> {
+  _RenderReorderColumn({
+    required this._keys,
+    required this.startY,
+    required this.drawnY,
+    required this._spacing,
+    required this._progress,
+  });
+
+  List<Key> _keys;
+  set keys(List<Key> value) {
+    _keys = value;
+    markNeedsLayout();
+  }
+
+  double _spacing;
+  set spacing(double value) {
+    if (value == _spacing) return;
+    _spacing = value;
+    markNeedsLayout();
+  }
+
+  Animation<double> _progress;
+  set progress(Animation<double> value) {
+    if (identical(value, _progress)) return;
+    if (attached) _progress.removeListener(markNeedsLayout);
+    _progress = value;
+    if (attached) _progress.addListener(markNeedsLayout);
+    markNeedsLayout();
+  }
+
+  Map<Key, double> startY;
+  Map<Key, double> drawnY;
+
+  @override
+  void attach(PipelineOwner owner) {
+    super.attach(owner);
+    _progress.addListener(markNeedsLayout);
+  }
+
+  @override
+  void detach() {
+    _progress.removeListener(markNeedsLayout);
+    super.detach();
+  }
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _ReorderParentData) {
+      child.parentData = _ReorderParentData();
     }
   }
 
   @override
-  bool shouldRelayout(_ReorderLayoutDelegate oldDelegate) =>
-      !identical(keys, oldDelegate.keys) || spacing != oldDelegate.spacing;
+  void performLayout() {
+    final width = constraints.maxWidth;
+    final childConstraints = BoxConstraints.tightFor(width: width);
+    var targetY = 0.0;
+    var index = 0;
+    var child = firstChild;
+    drawnY.removeWhere((key, _) => !_keys.contains(key));
+    while (child != null) {
+      final key = _keys[index];
+      child.layout(childConstraints, parentUsesSize: true);
+      // New children start where they belong and pop in on their own.
+      final fromY = startY[key] ?? targetY;
+      final y = fromY + (targetY - fromY) * _progress.value;
+      final parentData = child.parentData! as _ReorderParentData;
+      parentData.offset = Offset(0, y);
+      drawnY[key] = y;
+      targetY += child.size.height + _spacing;
+      index++;
+      child = parentData.nextSibling;
+    }
+    final height = index == 0 ? 0.0 : targetY - _spacing;
+    size = constraints.constrain(Size(width, height));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) =>
+      defaultPaint(context, offset);
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      defaultHitTestChildren(result, position: position);
 }

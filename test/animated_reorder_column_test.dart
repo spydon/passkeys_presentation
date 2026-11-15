@@ -52,4 +52,37 @@ void main() {
     expect(yOf(tester, 'short'), 0);
     expect(yOf(tester, 'tall'), 60);
   });
+
+  testWidgets('is as tall as its children so it can scroll', (tester) async {
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            height: 120,
+            child: SingleChildScrollView(
+              controller: controller,
+              child: AnimatedReorderColumn(
+                spacing: 10,
+                children: [
+                  for (final id in ['a', 'b', 'c'])
+                    SizedBox(key: ValueKey(id), height: 100),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(tester.getSize(find.byType(AnimatedReorderColumn)).height, 320);
+
+    expect(controller.position.maxScrollExtent, 200);
+
+    controller.jumpTo(150);
+    await tester.pump();
+    expect(tester.getTopLeft(find.byKey(const ValueKey('b'))).dy, -40);
+  });
 }

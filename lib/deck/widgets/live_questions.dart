@@ -57,17 +57,19 @@ class _LiveQuestionsState extends State<LiveQuestions> {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: AnimatedReorderColumn(
-                children: [
-                  for (final question in questions)
-                    _PopIn(
-                      key: ValueKey(question.id),
-                      child: _QuestionCard(
-                        question: question,
-                        isNewest: question.id == newestId,
+              child: SingleChildScrollView(
+                child: AnimatedReorderColumn(
+                  children: [
+                    for (final question in questions)
+                      _PopIn(
+                        key: ValueKey(question.id),
+                        child: _QuestionCard(
+                          question: question,
+                          isNewest: question.id == newestId,
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
